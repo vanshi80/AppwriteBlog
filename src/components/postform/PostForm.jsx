@@ -6,7 +6,15 @@ import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 
 export default function PostForm({ post }) {
-    const { register, handleSubmit, watch, setValue, control, getValues } = useForm({
+    const {
+        register,
+        handleSubmit,
+        watch,
+        setValue,
+        control,
+        getValues,
+        formState: { errors },
+    } = useForm({
         defaultValues: {
             title: post?.title || "",
             slug: post?.$id || "",
@@ -19,43 +27,50 @@ export default function PostForm({ post }) {
     const userData = useSelector((state) => state.auth.userData);
 
     const submit = async (data) => {
-        if (post) {
-            const file = data.image[0] ? await appwriteService.uploadFile(data.image[0]) : null;
+        console.log("Submit function triggered", data); // Debugging: Log form data
 
-            if (file) {
-                appwriteService.deleteFile(post.featuredImage);
-            }
+        try {
+            if (post) {
+                const file = data.image[0] ? await appwriteService.uploadFile(data.image[0]) : null;
 
-            const dbPost = await appwriteService.updatePost(post.$id, {
-                ...data,
-                featuredImage: file ? file.$id : undefined,
-            });
+                if (file) {
+                    appwriteService.deleteFile(post.featuredImage);
+                }
 
-            if (dbPost) {
-                navigate(`/post/${dbPost.$id}`);
-            }
-        } else {
-            const file = await appwriteService.uploadFile(data.image[0]);
-
-            if (file) {
-                const fileId = file.$id;
-                data.featuredImage = fileId;
-                const dbPost = await appwriteService.createPost({ ...data, userId: userData.$id });
+                const dbPost = await appwriteService.updatePost(post.$id, {
+                    ...data,
+                    featuredImage: file ? file.$id : undefined,
+                });
 
                 if (dbPost) {
                     navigate(`/post/${dbPost.$id}`);
                 }
+            } else {
+                const file = await appwriteService.uploadFile(data.image[0]);
+
+                if (file) {
+                    const fileId = file.$id;
+                    data.featuredImage = fileId;
+                    const dbPost = await appwriteService.createPost({ ...data, userId: userData.$id });
+
+                    if (dbPost) {
+                        navigate(`/post/${dbPost.$id}`);
+                    }
+                }
             }
+        } catch (error) {
+            console.error("Error submitting form:", error);
         }
     };
 
     const slugTransform = useCallback((value) => {
-        if (value && typeof value === "string")
+        if (value && typeof value === "string") {
             return value
                 .trim()
                 .toLowerCase()
                 .replace(/[^a-zA-Z\d\s]+/g, "-")
                 .replace(/\s/g, "-");
+        }
 
         return "";
     }, []);
@@ -77,18 +92,22 @@ export default function PostForm({ post }) {
                     label="Title :"
                     placeholder="Title"
                     className="mb-4"
-                    {...register("title", { required: true })}
+                    {...register("title", { required: "Title is required" })}
                 />
+                {errors.title && <span className="text-red-500">{errors.title.message}</span>}
+
                 <Input
                     label="Slug :"
                     placeholder="Slug"
                     className="mb-4"
-                    {...register("slug", { required: true })}
+                    {...register("slug", { required: "Slug is required" })}
                     onInput={(e) => {
                         setValue("slug", slugTransform(e.currentTarget.value), { shouldValidate: true });
                     }}
                 />
-                <div className="mb-6"> {/* Added gap between Featured Image and RTE */}
+                {errors.slug && <span className="text-red-500">{errors.slug.message}</span>}
+
+                <div className="mb-6">
                     <RTE label="Content :" name="content" control={control} defaultValue={getValues("content")} />
                 </div>
             </div>
@@ -98,10 +117,12 @@ export default function PostForm({ post }) {
                     type="file"
                     className="mb-4"
                     accept="image/png, image/jpg, image/jpeg, image/gif"
-                    {...register("image", { required: !post })}
+                    {...register("image", { required: !post ? "Image is required" : false })}
                 />
+                {errors.image && <span className="text-red-500">{errors.image.message}</span>}
+
                 {post && (
-                    <div className="w-full mb-6"> {/* Added gap between Featured Image and RTE */}
+                    <div className="w-full mb-6">
                         <img
                             src={appwriteService.getFilePreview(post.featuredImage)}
                             alt={post.title}
@@ -110,7 +131,7 @@ export default function PostForm({ post }) {
                     </div>
                 )}
 
-                <div className="flex flex-col gap-4"> {/* Made status and button appear in different lines */}
+                <div className="flex flex-col gap-4">
                     <Select
                         options={["active", "inactive"]}
                         label="Status"
