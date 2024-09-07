@@ -5,12 +5,18 @@ import { Button, Input, Logo } from "./index"
 import { useDispatch } from "react-redux"
 import authService from "../appwrite/auth"
 import { useForm } from "react-hook-form"
+import { FaEye, FaEyeSlash } from 'react-icons/fa'  // Import icons for eye toggle
 
 function Login() {
     const navigate = useNavigate()
     const dispatch = useDispatch()
     const { register, handleSubmit } = useForm()
     const [error, setError] = useState("")
+    const [showPassword, setShowPassword] = useState(false)  // State to toggle password visibility
+
+    const togglePasswordVisibility = () => {
+        setShowPassword(prevState => !prevState)
+    }
 
     const login = async (data) => {
         setError("")
@@ -25,6 +31,7 @@ function Login() {
             setError(error.message)
         }
     }
+
     return (
         <div
             className='flex items-center justify-center py-8 bg-gray-100'
@@ -60,14 +67,27 @@ function Login() {
                                 }
                             })}
                         />
-                        <Input
-                            label="Password: "
-                            type="password"
-                            placeholder="Enter your password"
-                            {...register("password", {
-                                required: true,
-                            })}
-                        />
+                        <div className="relative w-full">
+                            <Input
+                                label="Password: "
+                                type={showPassword ? "text" : "password"} // Toggle between text and password
+                                placeholder="Enter your password"
+                                {...register("password", {
+                                    required: true,
+                                })}
+                                className="pr-10" // Padding for the right side to give space for the eye icon
+                            />
+                            {/* <span
+                                onClick={togglePasswordVisibility}
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer text-gray-500"
+                                style={{ height: '1.5rem', display: 'flex', alignItems: 'center' }}
+                            >
+                                {showPassword ? <FaEyeSlash /> : <FaEye />}
+                            </span> */}
+                        </div>
+
+
+
                         <Button
                             type="submit"
                             className="w-full"
