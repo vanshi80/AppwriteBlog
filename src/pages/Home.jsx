@@ -7,26 +7,19 @@ function Home() {
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // Fetching the user's authentication status from the Redux store
     const status = useSelector((state) => state.auth.status);
 
     useEffect(() => {
-        // Only fetch posts if the user is authenticated
-        if (status) {
-            appwriteService.getPosts().then((posts) => {
-                if (posts) {
-                    setPosts(posts.documents);
-                }
-                setLoading(false);
-            }).catch(() => {
-                setLoading(false);
-            });
-        } else {
-            setLoading(false); // Set loading to false if the user is not authenticated
-        }
-    }, [status]); // Depend on 'status' so it only triggers when the authentication status changes
+        appwriteService.getPosts().then((posts) => {
+            if (posts) {
+                setPosts(posts.documents);
+            }
+            setLoading(false);
+        }).catch(() => {
+            setLoading(false);
+        });
+    }, []);
 
-    // If the user is not logged in, prompt them to login
     if (!status) {
         return (
             <div className="w-full h-screen flex items-center justify-center bg-gray-100">
@@ -39,7 +32,6 @@ function Home() {
         );
     }
 
-    // If the posts are still loading, show a loader
     if (loading) {
         return (
             <div className="w-full h-screen flex items-center justify-center bg-gray-100">
@@ -48,7 +40,6 @@ function Home() {
         );
     }
 
-    // Render the posts if they are available, or show a message if no posts are present
     return (
         <div className='w-full py-8 bg-gray-100'>
             <Container>
